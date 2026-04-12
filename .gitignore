@@ -1,0 +1,7 @@
+node_modules
+dist
+*.tgz
+.vibecommentrc
+.hollerrc
+holler-migration.sql
+vibecomment-migration.sql

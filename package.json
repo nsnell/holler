@@ -1,0 +1,13 @@
+{
+  "name": "holler",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Holler monorepo — Figma-style commenting SDK for any web app",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter @holler/sdk dev",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "license": "MIT",
+  "packageManager": "pnpm@9.0.0"
+}
