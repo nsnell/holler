@@ -13,7 +13,7 @@ import { runMigration } from './migrate.js'
 // Arg parsing
 // ──────────────────────────────────────────────────
 
-type Command = 'init' | 'add-site' | 'list-comments' | 'resolve' | 'comment' | 'agent-setup'
+type Command = 'init' | 'add-site' | 'list-comments' | 'resolve' | 'comment' | 'delete-comment' | 'agent-setup'
 
 interface ParsedArgs {
   command: Command
@@ -36,7 +36,7 @@ interface ParsedArgs {
   parentId?: string
 }
 
-const COMMANDS: Command[] = ['init', 'add-site', 'list-comments', 'resolve', 'comment', 'agent-setup']
+const COMMANDS: Command[] = ['init', 'add-site', 'list-comments', 'resolve', 'comment', 'delete-comment', 'agent-setup']
 
 function parseArgs(argv: string[]): ParsedArgs {
   const args = argv.slice(2)
@@ -479,6 +479,32 @@ async function runResolve(flags: ParsedArgs): Promise<void> {
   }
 }
 
+async function runDeleteComment(flags: ParsedArgs): Promise<void> {
+  requireFlags(flags, 'url', 'serviceKey', 'commentId')
+  const client = makeClient(flags.url!, flags.serviceKey!)
+
+  const { data, error } = await client
+    .from('holler_comments')
+    .update({
+      body: '[removed]',
+      author_display_name: null,
+      author_avatar_url: null,
+    })
+    .eq('id', flags.commentId!)
+    .select('id, body')
+    .single()
+
+  if (error) throw new Error(`Failed to delete comment: ${error.message}`)
+
+  const row = data as { id: string; body: string }
+
+  if (flags.json) {
+    console.log(JSON.stringify({ id: row.id, deleted: true }))
+  } else {
+    console.log(pc.green(`  ✓ Comment removed: ${row.id}`))
+  }
+}
+
 async function runComment(flags: ParsedArgs): Promise<void> {
   requireFlags(flags, 'url', 'serviceKey', 'siteId', 'body')
   const client = makeClient(flags.url!, flags.serviceKey!)
@@ -682,8 +708,9 @@ async function main(): Promise<void> {
       case 'add-site':      await runAddSite(flags); break
       case 'list-comments': await runListComments(flags); break
       case 'resolve':       await runResolve(flags); break
-      case 'comment':       await runComment(flags); break
-      case 'agent-setup':   await runAgentSetup(flags); break
+      case 'comment':        await runComment(flags); break
+      case 'delete-comment': await runDeleteComment(flags); break
+      case 'agent-setup':    await runAgentSetup(flags); break
       default:              await runInit(flags); break
     }
   } catch (err) {

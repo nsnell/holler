@@ -15,6 +15,7 @@ export interface ThreadOptions {
   anchor: { x: number; y: number }
   onReply: (body: string) => void | Promise<void>
   onToggleResolved: (nextResolved: boolean) => void | Promise<void>
+  onDelete: (commentId: string) => void | Promise<void>
   onClose: () => void
 }
 
@@ -132,14 +133,46 @@ export class ThreadPanel {
   }
 
   private messageEl(c: Comment): HTMLElement {
+    const isRemoved = c.body === '[removed]'
+
+    if (isRemoved) {
+      return h('div', { className: 'vc-msg' }, [
+        h('div', { className: 'vc-msg-body', style: 'color:var(--vc-text-dim);font-style:italic' }, [
+          'Comment removed',
+        ]),
+      ])
+    }
+
     const id = identityFor(c.author_id ?? c.author_display_name, c.author_display_name)
     const avatar = h('div', { className: 'vc-toolbar-avatar' }, [id.emoji])
     avatar.style.background = id.color
-    const meta = h('div', { className: 'vc-msg-meta' }, [
+
+    const metaChildren: (Node | string)[] = [
       avatar,
       h('span', { className: 'vc-msg-author' }, [c.author_display_name ?? 'Anonymous']),
       h('span', {}, [relativeTime(c.created_at)]),
-    ])
+    ]
+
+    const user = this.options.currentUser
+    const isAuthor = !!(user && c.author_id === user.id)
+    const ageMs = Date.now() - new Date(c.created_at).getTime()
+    const withinWindow = ageMs < 30 * 60 * 1000
+
+    if (isAuthor && withinWindow) {
+      const deleteBtn = h(
+        'button',
+        {
+          type: 'button',
+          className: 'vc-btn-ghost',
+          style: 'font-size:11px;margin-left:auto',
+          onClick: () => { void this.options.onDelete(c.id) },
+        },
+        ['Delete'],
+      )
+      metaChildren.push(deleteBtn)
+    }
+
+    const meta = h('div', { className: 'vc-msg-meta' }, metaChildren)
     const body = h('div', { className: 'vc-msg-body' }, [c.body])
     return h('div', { className: 'vc-msg' }, [meta, body])
   }

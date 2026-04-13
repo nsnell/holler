@@ -190,6 +190,9 @@ export function initHoller(config: HollerConfig): HollerInstance {
         if (next) await comments.resolveComment(comment.id)
         else await comments.unresolveComment(comment.id)
       },
+      onDelete: async (commentId) => {
+        await comments.deleteComment(commentId)
+      },
     })
     overlay.getRoot().appendChild(threadPanel.el)
   }

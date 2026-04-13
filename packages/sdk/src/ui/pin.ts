@@ -58,7 +58,13 @@ export class PinLayer {
       // Resolved pins always render green, regardless of author identity.
       el.style.background = c.resolved ? '#10b981' : id.color
       el.dataset.resolved = c.resolved ? 'true' : 'false'
-      el.title = c.body.slice(0, 80)
+      if (c.body === '[removed]') {
+        el.style.opacity = '0.25'
+        el.title = 'Comment removed'
+      } else {
+        el.style.opacity = ''
+        el.title = c.body.slice(0, 80)
+      }
       this.positionPin(el, c.x_percent, c.y_percent)
     })
 

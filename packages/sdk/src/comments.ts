@@ -68,6 +68,33 @@ export class CommentsStore {
     }
   }
 
+  /**
+   * Soft-delete: replaces the body with a sentinel and clears author info.
+   * The row stays so threads remain coherent. The SDK renders it as
+   * "Comment removed" in muted text.
+   */
+  async deleteComment(commentId: string): Promise<boolean> {
+    try {
+      const { error } = await this.client
+        .from('holler_comments')
+        .update({
+          body: '[removed]',
+          author_display_name: null,
+          author_avatar_url: null,
+        })
+        .eq('id', commentId)
+
+      if (error) {
+        warn('deleteComment error', error.message)
+        return false
+      }
+      return true
+    } catch (err) {
+      warn('deleteComment threw', err)
+      return false
+    }
+  }
+
   async resolveComment(commentId: string): Promise<boolean> {
     return this.setResolved(commentId, true)
   }

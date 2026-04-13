@@ -174,7 +174,10 @@ export class CommentsPanel {
               h('span', {}, [relativeTime(c.created_at)]),
             ]),
           ]),
-          h('div', { className: 'vc-unresolved-item-body' }, [c.body]),
+          h('div', {
+            className: 'vc-unresolved-item-body',
+            style: c.body === '[removed]' ? 'font-style:italic;opacity:0.5' : '',
+          }, [c.body === '[removed]' ? 'Comment removed' : c.body]),
           replyCount > 0
             ? h('div', { className: 'vc-unresolved-item-meta', style: 'margin-top:2px' }, [
                 h('span', { style: 'font-size:11px;color:var(--vc-text-muted)' }, [
