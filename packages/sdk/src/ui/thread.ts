@@ -59,7 +59,7 @@ export class ThreadPanel {
       'button',
       {
         type: 'button',
-        className: 'vc-btn vc-btn-ghost',
+        className: 'vc-btn vc-btn-resolve',
         onClick: () => this.handleToggleResolved(),
       },
       [options.root.resolved ? 'Unresolve' : 'Resolve'],
