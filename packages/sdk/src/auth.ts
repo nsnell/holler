@@ -64,6 +64,45 @@ export class AuthManager {
     return this.currentUser
   }
 
+  /**
+   * True if the user is signed in but hasn't set a display name yet
+   * (i.e. they just clicked a magic link for the first time).
+   */
+  needsProfile(): boolean {
+    if (!this.currentUser) return false
+    const name = this.currentUser.displayName
+    // If the display name is missing, empty, or just their email address,
+    // they haven't set a real name yet.
+    return !name || name === this.currentUser.email
+  }
+
+  /**
+   * Save the user's display name to Supabase Auth metadata.
+   * This persists across sessions and is included in `user_metadata.full_name`.
+   */
+  async updateProfile(firstName: string, lastName: string): Promise<boolean> {
+    const fullName = `${firstName.trim()} ${lastName.trim()}`.trim()
+    if (!fullName) return false
+    try {
+      const { error } = await this.client.auth.updateUser({
+        data: { full_name: fullName },
+      })
+      if (error) {
+        warn('updateProfile failed', error.message)
+        return false
+      }
+      // Update local state immediately so the UI reflects the change.
+      if (this.currentUser) {
+        this.currentUser = { ...this.currentUser, displayName: fullName }
+        this.emit()
+      }
+      return true
+    } catch (err) {
+      warn('updateProfile threw', err)
+      return false
+    }
+  }
+
   /** Register an auth-change listener. Returns an unsubscribe function. */
   onAuthChange(cb: AuthChangeCallback): () => void {
     this.listeners.add(cb)

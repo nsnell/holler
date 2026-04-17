@@ -15,6 +15,7 @@ import { Toolbar } from './ui/toolbar.js'
 import { Composer } from './ui/composer.js'
 import { ThreadPanel } from './ui/thread.js'
 import { AuthModal } from './ui/auth-modal.js'
+import { ProfileModal } from './ui/profile-modal.js'
 import { Menu } from './ui/menu.js'
 import { CommentsPanel } from './ui/comments-panel.js'
 import { percentToPixels } from './positioning.js'
@@ -64,6 +65,7 @@ export function initHoller(config: HollerConfig): HollerInstance {
   let threadPanel: ThreadPanel | null = null
   let authModal: AuthModal | null = null
   let menu: Menu | null = null
+  let profileModal: ProfileModal | null = null
   let commentsPanel: CommentsPanel | null = null
   let stopLayoutObserver: (() => void) | null = null
   let realtimeChannel: RealtimeChannel | null = null
@@ -118,6 +120,13 @@ export function initHoller(config: HollerConfig): HollerInstance {
     }
   }
 
+  const closeProfile = () => {
+    if (profileModal) {
+      profileModal.el.remove()
+      profileModal = null
+    }
+  }
+
   const closeMenu = () => {
     if (menu) {
       menu.destroy()
@@ -153,10 +162,37 @@ export function initHoller(config: HollerConfig): HollerInstance {
     })
   }
 
+  const showProfileIfNeeded = (): Promise<boolean> => {
+    if (!auth.needsProfile()) return Promise.resolve(true)
+    const user = auth.getCurrentUser()
+    if (!user) return Promise.resolve(false)
+
+    return new Promise((resolve) => {
+      closeProfile()
+      profileModal = new ProfileModal({
+        email: user.email ?? '',
+        onSubmit: async (first, last) => {
+          const ok = await auth.updateProfile(first, last)
+          if (ok) {
+            closeProfile()
+            toolbar?.setUser(auth.getCurrentUser())
+            resolve(true)
+          }
+          return ok
+        },
+      })
+      overlay.getRoot().appendChild(profileModal.el)
+    })
+  }
+
   const ensureAuthed = async (): Promise<boolean> => {
     if (!requireAuth) return true
-    if (auth.getCurrentUser()) return true
-    return openAuthModal()
+    if (auth.getCurrentUser()) {
+      return showProfileIfNeeded()
+    }
+    const authed = await openAuthModal()
+    if (!authed) return false
+    return showProfileIfNeeded()
   }
 
   const openThreadFor = (comment: Comment, pinEl: HTMLElement) => {
@@ -397,6 +433,12 @@ export function initHoller(config: HollerConfig): HollerInstance {
       toolbar.setUser(auth.getCurrentUser())
       auth.onAuthChange((user) => toolbar?.setUser(user))
 
+      // If the user just landed after a magic link click and hasn't
+      // set their name yet, prompt them immediately.
+      if (auth.needsProfile()) {
+        void showProfileIfNeeded()
+      }
+
       renderPins()
 
       // Keyboard shortcuts:
@@ -508,6 +550,7 @@ export function initHoller(config: HollerConfig): HollerInstance {
       }
       closeMenu()
       closeCommentsPanel()
+      closeProfile()
       closeComposer()
       closeThread()
       closeModal()
