@@ -227,7 +227,7 @@ export const STYLES = /* css */ `
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #9494A8;
+    color: #B4B4C8;
   }
   .vc-thread-close {
     width: 26px;
@@ -262,7 +262,7 @@ export const STYLES = /* css */ `
     align-items: center;
     gap: 6px;
     font-size: 12px;
-    color: #5C5C72;
+    color: #7E7E96;
   }
   .vc-msg-author {
     font-weight: 600;
@@ -273,7 +273,7 @@ export const STYLES = /* css */ `
     line-height: 1.55;
     white-space: pre-wrap;
     word-wrap: break-word;
-    color: #9494A8;
+    color: #C4C4D4;
   }
   .vc-thread-actions {
     display: flex;
@@ -582,16 +582,16 @@ export const STYLES = /* css */ `
     padding: 3px;
   }
   .vc-tab {
-    padding: 4px 10px;
+    padding: 5px 11px;
     border-radius: 6px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     font-family: var(--vc-mono);
-    color: #5C5C72;
+    color: #7E7E96;
     transition: background 0.12s ease, color 0.12s ease;
     white-space: nowrap;
   }
-  .vc-tab:hover { color: #9494A8; }
+  .vc-tab:hover { color: #B4B4C8; }
   .vc-tab[data-active="true"] {
     background: #1C1C23;
     color: #EDEDF0;
@@ -636,7 +636,7 @@ export const STYLES = /* css */ `
     padding: 48px 16px;
     text-align: center;
     font-size: 13px;
-    color: #5C5C72;
+    color: #7E7E96;
   }
   .vc-unresolved-item {
     padding: 12px 14px;
@@ -656,13 +656,13 @@ export const STYLES = /* css */ `
     align-items: center;
     justify-content: space-between;
     font-size: 11px;
-    color: #5C5C72;
+    color: #7E7E96;
     font-weight: 500;
   }
   .vc-unresolved-item-body {
     font-size: 13px;
     line-height: 1.5;
-    color: #9494A8;
+    color: #C4C4D4;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
