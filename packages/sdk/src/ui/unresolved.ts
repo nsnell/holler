@@ -91,7 +91,10 @@ export class UnresolvedPanel {
         },
         [
           h('div', { className: 'vc-unresolved-item-meta' }, [
-            h('span', {}, [c.author_display_name ?? 'Anonymous']),
+            h('span', {}, [
+              (c.is_agent ? '🤖 ' : '') +
+                (c.author_display_name ?? (c.is_agent ? 'Agent' : 'Anonymous')),
+            ]),
             h('span', {}, [relativeTime(c.created_at)]),
           ]),
           h('div', { className: 'vc-unresolved-item-body' }, [c.body]),

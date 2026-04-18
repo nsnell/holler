@@ -1,6 +1,6 @@
 import type { Comment } from '../types.js'
 import { percentToPixels } from '../positioning.js'
-import { identityFor } from '../identity.js'
+import { identityFor, AGENT_IDENTITY } from '../identity.js'
 
 /**
  * Render the pin layer for a set of comments.
@@ -51,9 +51,12 @@ export class PinLayer {
         el = btn
       }
       // Each author gets their own animal emoji + color, deterministic
-      // from their auth ID. Anonymous comments fall back to a number.
-      const id = identityFor(c.author_id ?? c.author_display_name, c.author_display_name)
-      const hasAuthor = !!(c.author_id || c.author_display_name)
+      // from their auth ID. Agents always render as 🤖. Anonymous comments
+      // fall back to a number.
+      const id = c.is_agent
+        ? AGENT_IDENTITY
+        : identityFor(c.author_id ?? c.author_display_name, c.author_display_name)
+      const hasAuthor = c.is_agent || !!(c.author_id || c.author_display_name)
       el.textContent = hasAuthor ? id.emoji : String(idx + 1)
       // Resolved pins always render green, regardless of author identity.
       el.style.background = c.resolved ? '#10b981' : id.color

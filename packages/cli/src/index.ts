@@ -143,6 +143,24 @@ function requireFlags(flags: ParsedArgs, ...names: (keyof ParsedArgs)[]): void {
   }
 }
 
+/**
+ * Git Bash / MSYS rewrites a leading "/" into a Windows path like
+ * "C:/Program Files/Git/" before arguments reach Node. That makes
+ * --page silently wrong and the comment invisible on the intended
+ * page. Catch it and explain how to fix it.
+ */
+function assertNotMsysMangled(page: string): void {
+  if (/^[A-Za-z]:[\\/]/.test(page)) {
+    throw new Error(
+      `--page looks like a Windows filesystem path ("${page}"). ` +
+        `Git Bash / MSYS rewrote your leading "/" before it reached the CLI. ` +
+        `Fix it by either:\n` +
+        `  - prefixing with "//" (e.g. --page "//about"), or\n` +
+        `  - exporting MSYS_NO_PATHCONV=1 in the shell first.`,
+    )
+  }
+}
+
 async function createSite(
   client: SupabaseClient,
   name: string,
@@ -357,6 +375,7 @@ function parseElementContext(raw: string | null): Record<string, unknown> | null
 
 async function runListComments(flags: ParsedArgs): Promise<void> {
   requireFlags(flags, 'url', 'serviceKey', 'siteId')
+  if (flags.page) assertNotMsysMangled(flags.page)
   const client = makeClient(flags.url!, flags.serviceKey!)
   const status = flags.status ?? 'all'
 
@@ -528,13 +547,18 @@ async function runComment(flags: ParsedArgs): Promise<void> {
   requireFlags(flags, 'url', 'serviceKey', 'siteId', 'body')
   const client = makeClient(flags.url!, flags.serviceKey!)
 
+  if (flags.page) assertNotMsysMangled(flags.page)
+
   let pagePath = flags.page ?? '/'
   let xPercent = flags.x ?? 50
   let yPercent = flags.y ?? 5
   const authorName = flags.author ?? 'AI Agent'
 
-  // When replying, inherit the parent's page_path and position so the
-  // reply lands on the correct page and the SDK's subscription picks it up.
+  // When replying, always inherit the parent's page_path and position.
+  // Agents (especially under Git Bash on Windows) can't reliably pass a
+  // correct --page — MSYS rewrites "/" to a local filesystem path. Since
+  // a reply only makes sense on the same thread anyway, we ignore any
+  // --page / --x / --y the agent passed and use the parent's values.
   if (flags.parentId) {
     const { data: parent, error: parentErr } = await client
       .from('holler_comments')
@@ -544,9 +568,9 @@ async function runComment(flags: ParsedArgs): Promise<void> {
 
     if (parentErr) throw new Error(`Failed to fetch parent comment: ${parentErr.message}`)
     const p = parent as { page_path: string; x_percent: number; y_percent: number }
-    pagePath = flags.page ?? p.page_path
-    xPercent = flags.x ?? p.x_percent
-    yPercent = flags.y ?? p.y_percent
+    pagePath = p.page_path
+    xPercent = p.x_percent
+    yPercent = p.y_percent
   }
 
   const row = {
@@ -558,6 +582,7 @@ async function runComment(flags: ParsedArgs): Promise<void> {
     author_id: null,
     author_display_name: authorName,
     author_avatar_url: null,
+    is_agent: true,
     parent_id: flags.parentId ?? null,
     viewport_width: null,
   }
@@ -695,6 +720,17 @@ code to fix it.
 3. Fix the issue in code
 4. Reply: \`comment --parent-id "..." --body "Fixed in ..." --author "Claude" --json\`
 5. Resolve: \`resolve --comment-id "..." --json\`
+
+## Git Bash / MSYS gotcha (Windows only)
+
+Under Git Bash, a leading \`/\` in \`--page\` gets rewritten to a local
+Windows path (e.g. \`C:/Program Files/Git/\`). Replies inherit the parent's
+page automatically, so this only matters for new top-level comments.
+
+If you need to pass \`--page\`, either:
+
+- prefix with \`//\` (e.g. \`--page "//about"\`), or
+- \`export MSYS_NO_PATHCONV=1\` in the shell first.
 `
 
   const { writeFile } = await import('node:fs/promises')

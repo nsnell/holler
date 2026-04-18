@@ -1,6 +1,6 @@
 import type { Comment, AuthUser } from '../types.js'
 import { h, relativeTime, replaceChildren } from './dom.js'
-import { identityFor } from '../identity.js'
+import { identityFor, AGENT_IDENTITY } from '../identity.js'
 
 /**
  * Thread popover anchored to a pin. Shows the original comment,
@@ -143,15 +143,33 @@ export class ThreadPanel {
       ])
     }
 
-    const id = identityFor(c.author_id ?? c.author_display_name, c.author_display_name)
+    const id = c.is_agent
+      ? AGENT_IDENTITY
+      : identityFor(c.author_id ?? c.author_display_name, c.author_display_name)
     const avatar = h('div', { className: 'vc-toolbar-avatar' }, [id.emoji])
     avatar.style.background = id.color
 
+    const authorLabel = c.author_display_name ?? (c.is_agent ? 'Agent' : 'Anonymous')
     const metaChildren: (Node | string)[] = [
       avatar,
-      h('span', { className: 'vc-msg-author' }, [c.author_display_name ?? 'Anonymous']),
-      h('span', {}, [relativeTime(c.created_at)]),
+      h('span', { className: 'vc-msg-author' }, [authorLabel]),
     ]
+    if (c.is_agent) {
+      metaChildren.push(
+        h(
+          'span',
+          {
+            className: 'vc-msg-badge',
+            style:
+              'font-size:10px;padding:1px 6px;border-radius:999px;' +
+              'background:rgba(100,116,139,0.18);color:var(--vc-text-dim);' +
+              'text-transform:uppercase;letter-spacing:0.04em;font-weight:600',
+          },
+          ['Agent'],
+        ),
+      )
+    }
+    metaChildren.push(h('span', {}, [relativeTime(c.created_at)]))
 
     const user = this.options.currentUser
     const isAuthor = !!(user && c.author_id === user.id)

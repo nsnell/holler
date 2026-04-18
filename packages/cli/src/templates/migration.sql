@@ -33,6 +33,7 @@ create table if not exists holler_comments (
   author_id uuid references auth.users(id),
   author_display_name text,
   author_avatar_url text,
+  is_agent boolean default false,
 
   parent_id uuid references holler_comments(id) on delete cascade,
 
@@ -51,6 +52,10 @@ create index if not exists idx_comments_site_page
 
 create index if not exists idx_comments_parent
   on holler_comments(parent_id);
+
+-- Backfill for installs created before is_agent existed.
+alter table holler_comments
+  add column if not exists is_agent boolean default false;
 
 -- ============================================
 -- REACTIONS table

@@ -68,6 +68,7 @@ export interface Comment {
   author_id: string | null
   author_display_name: string | null
   author_avatar_url: string | null
+  is_agent: boolean
   parent_id: string | null
   resolved: boolean
   resolved_by: string | null

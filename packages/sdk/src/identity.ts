@@ -49,6 +49,13 @@ export interface Identity {
 /** Anonymous identity used when we have no seed at all. */
 const ANON: Identity = { color: '#9ca3af', emoji: '👤', initial: '?' }
 
+/** Identity for agent-authored comments (posted via the CLI). */
+export const AGENT_IDENTITY: Identity = {
+  color: '#475569',
+  emoji: '🤖',
+  initial: 'A',
+}
+
 /**
  * djb2 hash. Tiny, fast, well-distributed for short strings —
  * good enough for picking palette indices.

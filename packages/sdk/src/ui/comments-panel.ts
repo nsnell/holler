@@ -1,6 +1,6 @@
 import type { Comment } from '../types.js'
 import { h, relativeTime, replaceChildren } from './dom.js'
-import { identityFor } from '../identity.js'
+import { identityFor, AGENT_IDENTITY } from '../identity.js'
 
 /**
  * Popover listing all comments on the current page, with filter tabs:
@@ -150,11 +150,14 @@ export class CommentsPanel {
     const replies = this.options.comments.filter((c) => !!c.parent_id)
 
     const items = topLevel.map((c) => {
-      const id = identityFor(c.author_id ?? c.author_display_name, c.author_display_name)
+      const id = c.is_agent
+        ? AGENT_IDENTITY
+        : identityFor(c.author_id ?? c.author_display_name, c.author_display_name)
       const replyCount = replies.filter((r) => r.parent_id === c.id).length
       const badge = c.resolved
         ? h('span', { className: 'vc-comment-badge', dataset: { variant: 'resolved' } }, ['Resolved'])
         : h('span', { className: 'vc-comment-badge', dataset: { variant: 'open' } }, ['Open'])
+      const authorLabel = c.author_display_name ?? (c.is_agent ? 'Agent' : 'Anonymous')
 
       return h(
         'button',
@@ -167,7 +170,7 @@ export class CommentsPanel {
           h('div', { className: 'vc-unresolved-item-meta' }, [
             h('span', { style: 'display:inline-flex;align-items:center;gap:4px' }, [
               h('span', { style: `font-size:14px` }, [id.emoji]),
-              h('span', {}, [c.author_display_name ?? 'Anonymous']),
+              h('span', {}, [authorLabel]),
             ]),
             h('span', { style: 'display:inline-flex;align-items:center;gap:6px' }, [
               badge,
