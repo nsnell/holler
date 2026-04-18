@@ -1,6 +1,6 @@
 -- ============================================
 -- Holler Schema
--- Run via: npx @holler/init
+-- Run via: npx @holler-vibe/cli
 -- ============================================
 
 create extension if not exists "uuid-ossp";

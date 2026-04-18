@@ -35,20 +35,18 @@ Create a free project at [supabase.com](https://supabase.com). From **Settings >
 ### Step 2 — Run the CLI
 
 ```bash
-npx @holler/init
+npx @holler-vibe/cli
 ```
-
-> **Not published to npm yet.** For now, clone this repo and run `pnpm install && pnpm build`, then use `node packages/cli/dist/index.js` instead of `npx`.
 
 The CLI connects to your Supabase project, creates the database tables, and gives you a **site ID**.
 
 ### Step 3 — Add the script tag
 
-Copy `packages/sdk/dist/holler.umd.js` into your project and add before `</body>`:
+Add this before `</body>` — the UMD bundle is served from unpkg:
 
 ```html
 <script
-  src="./holler.umd.js"
+  src="https://unpkg.com/@holler-vibe/sdk/dist/holler.umd.js"
   data-supabase-url="https://your-project.supabase.co"
   data-supabase-anon-key="your-anon-key"
   data-site-id="your-site-uuid"
@@ -57,12 +55,14 @@ Copy `packages/sdk/dist/holler.umd.js` into your project and add before `</body>
 
 A comment button appears on your page. Click it, click anywhere, and leave feedback.
 
+Using a bundler (React, Vue, etc.)? Install the SDK instead: `npm install @holler-vibe/sdk` — see [JavaScript API](#javascript-api) below.
+
 ### Step 4 (optional) — Set up your AI agent
 
 Generate a `HOLLER.md` file with agent instructions pre-filled for your project:
 
 ```bash
-node packages/cli/dist/index.js agent-setup \
+npx @holler-vibe/cli agent-setup \
   --url "https://your-project.supabase.co" \
   --key "your-service-role-key" \
   --site-id "your-site-uuid"
@@ -86,14 +86,14 @@ The CLI lets any coding agent interact with comments without a browser.
 
 **List open comments:**
 ```bash
-node packages/cli/dist/index.js list-comments \
+npx @holler-vibe/cli list-comments \
   --url "..." --key "..." --site-id "..." \
   --status unresolved --json
 ```
 
 **Reply to a comment:**
 ```bash
-node packages/cli/dist/index.js comment \
+npx @holler-vibe/cli comment \
   --parent-id "comment-uuid" \
   --body "Fixed the button size" \
   --author "Claude" --json
@@ -101,13 +101,13 @@ node packages/cli/dist/index.js comment \
 
 **Resolve a comment:**
 ```bash
-node packages/cli/dist/index.js resolve \
+npx @holler-vibe/cli resolve \
   --comment-id "comment-uuid" --json
 ```
 
 **Delete a comment (soft delete):**
 ```bash
-node packages/cli/dist/index.js delete-comment \
+npx @holler-vibe/cli delete-comment \
   --comment-id "comment-uuid" --json
 ```
 
@@ -139,7 +139,7 @@ Options via `data-*` attributes on the script tag or passed to `initHoller()`:
 ### JavaScript API
 
 ```ts
-import { initHoller } from '@holler/sdk'
+import { initHoller } from '@holler-vibe/sdk'
 
 const holler = initHoller({
   supabaseUrl: '...',
@@ -160,7 +160,7 @@ holler.destroy()              // Clean up everything
 Each prototype gets its own site ID. Comments stay isolated per site:
 
 ```bash
-node packages/cli/dist/index.js add-site --name "My Other App" --json
+npx @holler-vibe/cli add-site --name "My Other App" --json
 ```
 
 ---

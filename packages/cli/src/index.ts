@@ -156,7 +156,7 @@ async function createSite(
 
 function snippetText(supabaseUrl: string, siteId: string): string {
   return `<script
-  src="./holler.umd.js"
+  src="https://unpkg.com/@holler-vibe/sdk/dist/holler.umd.js"
   data-supabase-url="${supabaseUrl}"
   data-supabase-anon-key="YOUR_ANON_KEY"
   data-site-id="${siteId}"
@@ -166,18 +166,11 @@ function snippetText(supabaseUrl: string, siteId: string): string {
 function printSnippet(supabaseUrl: string, siteId: string): void {
   console.log('')
   console.log('  ─────────────────')
-  console.log('  Add this to your prototype:')
-  console.log('')
-  console.log(
-    pc.yellow('  [!] @holler/sdk is NOT yet published to npm.'),
-  )
-  console.log(
-    pc.yellow('      Copy the built UMD file into your prototype:'),
-  )
+  console.log('  Add this to your prototype (before </body>):')
   console.log('')
   console.log(pc.cyan('      ' + snippetText(supabaseUrl, siteId).replace(/\n/g, '\n      ')))
   console.log('')
-  console.log(pc.dim('      (Copy from: packages/sdk/dist/holler.umd.js in this repo.)'))
+  console.log(pc.dim('      Using a bundler? npm install @holler-vibe/sdk'))
   console.log('')
   console.log(
     pc.yellow('  Reminder: use your Supabase ANON key above, NOT the service role key.'),
@@ -191,11 +184,11 @@ function printSiteJson(supabaseUrl: string, site: { id: string; name: string }):
     site_name: site.name,
     supabase_url: supabaseUrl,
     snippet: snippetText(supabaseUrl, site.id),
-    local_umd_path: 'packages/sdk/dist/holler.umd.js',
+    sdk_package: '@holler-vibe/sdk',
     instructions: [
-      'Copy holler.umd.js into your prototype.',
       'Replace YOUR_ANON_KEY with the anon/public key from Supabase Settings > API.',
       'Add the <script> tag before </body> in your HTML.',
+      'Using a bundler? Run: npm install @holler-vibe/sdk',
     ],
   }, null, 2))
 }
@@ -242,7 +235,7 @@ async function runInit(flags: ParsedArgs): Promise<void> {
   } else {
     console.log('')
     console.log('  Skipped site creation. Run:')
-    console.log(pc.cyan('    npx @holler/init add-site --name "My Site"'))
+    console.log(pc.cyan('    npx @holler-vibe/cli add-site --name "My Site"'))
     console.log('  to create one later.')
     console.log('')
   }

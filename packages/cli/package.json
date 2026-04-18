@@ -1,12 +1,14 @@
 {
-  "name": "@holler/cli",
-  "version": "0.1.0",
+  "name": "@holler-vibe/cli",
+  "version": "0.1.1",
   "description": "CLI for setting up Holler against a user's Supabase project",
   "license": "MIT",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
-    "holler-init": "./dist/index.js",
-    "@holler/init": "./dist/index.js"
+    "holler-init": "./dist/index.js"
   },
   "files": [
     "dist",

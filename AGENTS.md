@@ -1,11 +1,11 @@
 # Holler — Agent Setup Instructions
 
-All commands below use the CLI at `packages/cli/dist/index.js`. Add `--json` to
+All commands below use the CLI via `npx @holler-vibe/cli`. Add `--json` to
 any command for machine-readable output.
 
 Shorthand for examples below:
 ```
-CLI="node /path/to/holler/packages/cli/dist/index.js"
+CLI="npx @holler-vibe/cli"
 URL="https://xxx.supabase.co"
 KEY="eyJ_SERVICE_ROLE_KEY"
 SITE="your-site-uuid"
@@ -26,23 +26,22 @@ the database tables and the first site.
 ## Adding Comments to a Prototype
 
 ### Option A: Script tag (any HTML page)
-Add before `</body>`:
+Add before `</body>` — the UMD bundle is served from unpkg:
 ```html
 <script
-  src="./holler.umd.js"
+  src="https://unpkg.com/@holler-vibe/sdk/dist/holler.umd.js"
   data-supabase-url="SUPABASE_URL"
   data-supabase-anon-key="SUPABASE_ANON_KEY"
   data-site-id="SITE_ID"
 ></script>
 ```
-Copy `packages/sdk/dist/holler.umd.js` into the target project.
 
 ### Option B: npm package (React, Vue, etc.)
 ```bash
-npm install @holler/sdk
+npm install @holler-vibe/sdk
 ```
 ```js
-import { initHoller } from '@holler/sdk'
+import { initHoller } from '@holler-vibe/sdk'
 initHoller({
   supabaseUrl: process.env.VITE_SUPABASE_URL,
   supabaseAnonKey: process.env.VITE_SUPABASE_ANON_KEY,

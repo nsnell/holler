@@ -5,7 +5,7 @@
   "description": "Holler monorepo — Figma-style commenting SDK for any web app",
   "scripts": {
     "build": "pnpm -r build",
-    "dev": "pnpm --filter @holler/sdk dev",
+    "dev": "pnpm --filter @holler-vibe/sdk dev",
     "typecheck": "pnpm -r typecheck"
   },
   "license": "MIT",

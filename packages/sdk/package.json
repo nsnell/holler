@@ -1,8 +1,11 @@
 {
-  "name": "@holler/sdk",
+  "name": "@holler-vibe/sdk",
   "version": "0.1.0",
   "description": "Drop-in, Figma-style commenting for any web app. Bring your own Supabase.",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/holler.umd.js",
   "module": "./dist/holler.esm.js",

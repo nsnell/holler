@@ -4,7 +4,7 @@ import { warn } from './debug.js'
 /**
  * Thin wrapper around @supabase/supabase-js.
  * We keep the anon key client-side — all access is mediated by the RLS
- * policies the CLI installs during `npx @holler/init`.
+ * policies the CLI installs during `npx @holler-vibe/cli`.
  */
 export function createSupabaseClient(
   url: string,
