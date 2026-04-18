@@ -42,7 +42,7 @@ The CLI connects to your Supabase project, creates the database tables, and give
 
 ### Step 3 — Add the script tag
 
-Add this before `</body>` — the UMD bundle is served from unpkg:
+Add this before `</body>` — the UMD bundle is served from unpkg. The CLI will also generate this for you, with your details:
 
 ```html
 <script

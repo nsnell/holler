@@ -20,6 +20,7 @@ interface ParsedArgs {
   name?: string
   url?: string
   serviceKey?: string
+  anonKey?: string
   json?: boolean
   // list-comments filters
   siteId?: string
@@ -55,6 +56,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     if (flag === '--name' && next) { flags.name = next; i++ }
     else if (flag === '--url' && next) { flags.url = next; i++ }
     else if ((flag === '--service-key' || flag === '--key') && next) { flags.serviceKey = next; i++ }
+    else if ((flag === '--anon-key' || flag === '--publishable-key') && next) { flags.anonKey = next; i++ }
     else if (flag === '--site-id' && next) { flags.siteId = next; i++ }
     else if (flag === '--page' && next) { flags.page = next; i++ }
     else if (flag === '--status' && next) { flags.status = next as ParsedArgs['status']; i++ }
@@ -71,6 +73,7 @@ function parseArgs(argv: string[]): ParsedArgs {
   // Fall back to environment variables for credentials
   flags.url = flags.url ?? process.env.HOLLER_URL
   flags.serviceKey = flags.serviceKey ?? process.env.HOLLER_KEY
+  flags.anonKey = flags.anonKey ?? process.env.HOLLER_ANON_KEY
   flags.siteId = flags.siteId ?? process.env.HOLLER_SITE_ID
 
   return flags
@@ -154,42 +157,56 @@ async function createSite(
   return data as { id: string; name: string }
 }
 
-function snippetText(supabaseUrl: string, siteId: string): string {
+function snippetText(supabaseUrl: string, anonKey: string, siteId: string): string {
   return `<script
   src="https://unpkg.com/@holler-vibe/sdk/dist/holler.umd.js"
   data-supabase-url="${supabaseUrl}"
-  data-supabase-anon-key="YOUR_ANON_KEY"
+  data-supabase-anon-key="${anonKey}"
   data-site-id="${siteId}"
 ></script>`
 }
 
-function printSnippet(supabaseUrl: string, siteId: string): void {
+function printSnippet(supabaseUrl: string, anonKey: string, siteId: string): void {
+  const hasAnon = anonKey !== 'YOUR_ANON_KEY'
   console.log('')
   console.log('  ─────────────────')
   console.log('  Add this to your prototype (before </body>):')
   console.log('')
-  console.log(pc.cyan('      ' + snippetText(supabaseUrl, siteId).replace(/\n/g, '\n      ')))
+  console.log(pc.cyan('      ' + snippetText(supabaseUrl, anonKey, siteId).replace(/\n/g, '\n      ')))
   console.log('')
   console.log(pc.dim('      Using a bundler? npm install @holler-vibe/sdk'))
   console.log('')
-  console.log(
-    pc.yellow('  Reminder: use your Supabase ANON key above, NOT the service role key.'),
-  )
-  console.log('')
+  if (!hasAnon) {
+    console.log(
+      pc.yellow('  Reminder: replace YOUR_ANON_KEY above with your Supabase anon/public key.'),
+    )
+    console.log('')
+  }
 }
 
-function printSiteJson(supabaseUrl: string, site: { id: string; name: string }): void {
+function printSiteJson(
+  supabaseUrl: string,
+  anonKey: string,
+  site: { id: string; name: string },
+): void {
+  const hasAnon = anonKey !== 'YOUR_ANON_KEY'
   console.log(JSON.stringify({
     site_id: site.id,
     site_name: site.name,
     supabase_url: supabaseUrl,
-    snippet: snippetText(supabaseUrl, site.id),
+    anon_key: hasAnon ? anonKey : null,
+    snippet: snippetText(supabaseUrl, anonKey, site.id),
     sdk_package: '@holler-vibe/sdk',
-    instructions: [
-      'Replace YOUR_ANON_KEY with the anon/public key from Supabase Settings > API.',
-      'Add the <script> tag before </body> in your HTML.',
-      'Using a bundler? Run: npm install @holler-vibe/sdk',
-    ],
+    instructions: hasAnon
+      ? [
+          'Add the <script> tag before </body> in your HTML.',
+          'Using a bundler? Run: npm install @holler-vibe/sdk',
+        ]
+      : [
+          'Replace YOUR_ANON_KEY with the anon/public key from Supabase Settings > API.',
+          'Add the <script> tag before </body> in your HTML.',
+          'Using a bundler? Run: npm install @holler-vibe/sdk',
+        ],
   }, null, 2))
 }
 
@@ -202,7 +219,11 @@ async function runInit(flags: ParsedArgs): Promise<void> {
   if (!isNonInteractive) header()
 
   const creds = isNonInteractive
-    ? { url: flags.url!, serviceRoleKey: flags.serviceKey! }
+    ? {
+        url: flags.url!,
+        serviceRoleKey: flags.serviceKey!,
+        anonKey: flags.anonKey ?? 'YOUR_ANON_KEY',
+      }
     : await promptCredentials()
 
   const client = makeClient(creds.url, creds.serviceRoleKey)
@@ -216,19 +237,19 @@ async function runInit(flags: ParsedArgs): Promise<void> {
     console.log(pc.green('  ✓ Schema ready'))
     console.log('')
   }
-  await saveRcFile(creds.url)
+  await saveRcFile(creds.url, creds.anonKey === 'YOUR_ANON_KEY' ? undefined : creds.anonKey)
 
   const shouldCreate = isNonInteractive ? !!flags.name : await confirmCreateFirstSite()
   if (shouldCreate) {
     const name = flags.name ?? (isNonInteractive ? 'Default Site' : await promptSiteName())
     const site = await createSite(client, name)
     if (flags.json) {
-      printSiteJson(creds.url, site)
+      printSiteJson(creds.url, creds.anonKey, site)
     } else {
       console.log('')
       console.log(pc.green(`  ✓ Site created: ${site.name}`))
       console.log(`    Site ID: ${pc.bold(site.id)}`)
-      printSnippet(creds.url, site.id)
+      printSnippet(creds.url, creds.anonKey, site.id)
       console.log(pc.green('  Done! Comments are live.'))
       console.log('')
     }
@@ -248,20 +269,25 @@ async function runAddSite(flags: ParsedArgs): Promise<void> {
   const rc = await readRcFile()
   let url: string
   let serviceRoleKey: string
+  let anonKey: string
 
   if (isNonInteractive) {
     url = flags.url!
     serviceRoleKey = flags.serviceKey!
+    anonKey = flags.anonKey ?? rc?.anonKey ?? 'YOUR_ANON_KEY'
   } else if (rc) {
     console.log(pc.dim(`  Using Supabase URL from .hollerrc: ${rc.url}`))
     const creds = await promptCredentials()
     url = creds.url
     serviceRoleKey = creds.serviceRoleKey
+    anonKey = creds.anonKey
+    await saveRcFile(url, anonKey)
   } else {
     const creds = await promptCredentials()
     url = creds.url
     serviceRoleKey = creds.serviceRoleKey
-    await saveRcFile(url)
+    anonKey = creds.anonKey
+    await saveRcFile(url, anonKey)
   }
 
   const client = makeClient(url, serviceRoleKey)
@@ -269,12 +295,12 @@ async function runAddSite(flags: ParsedArgs): Promise<void> {
   const site = await createSite(client, name)
 
   if (flags.json) {
-    printSiteJson(url, site)
+    printSiteJson(url, anonKey, site)
   } else {
     console.log('')
     console.log(pc.green(`  ✓ Site created: ${site.name}`))
     console.log(`    Site ID: ${pc.bold(site.id)}`)
-    printSnippet(url, site.id)
+    printSnippet(url, anonKey, site.id)
   }
 }
 
