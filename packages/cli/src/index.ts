@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { writeFile } from 'node:fs/promises'
 import pc from 'picocolors'
 import {
   promptCredentials,
@@ -22,6 +23,7 @@ interface ParsedArgs {
   serviceKey?: string
   anonKey?: string
   json?: boolean
+  noAgentFile?: boolean
   // list-comments filters
   siteId?: string
   page?: string
@@ -68,6 +70,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     else if (flag === '--author' && next) { flags.author = next; i++ }
     else if (flag === '--parent-id' && next) { flags.parentId = next; i++ }
     else if (flag === '--json') { flags.json = true }
+    else if (flag === '--no-agent-file') { flags.noAgentFile = true }
   }
 
   // Fall back to environment variables for credentials
@@ -161,6 +164,16 @@ function assertNotMsysMangled(page: string): void {
   }
 }
 
+async function writeAgentFileFor(
+  url: string,
+  serviceKey: string,
+  siteId: string,
+): Promise<string> {
+  const outPath = 'HOLLER.md'
+  await writeAgentFile({ url, serviceKey, siteId }, outPath)
+  return outPath
+}
+
 async function createSite(
   client: SupabaseClient,
   name: string,
@@ -206,6 +219,7 @@ function printSiteJson(
   supabaseUrl: string,
   anonKey: string,
   site: { id: string; name: string },
+  agentFilePath: string | null,
 ): void {
   const hasAnon = anonKey !== 'YOUR_ANON_KEY'
   console.log(JSON.stringify({
@@ -213,6 +227,7 @@ function printSiteJson(
     site_name: site.name,
     supabase_url: supabaseUrl,
     anon_key: hasAnon ? anonKey : null,
+    agent_file: agentFilePath,
     snippet: snippetText(supabaseUrl, anonKey, site.id),
     sdk_package: '@holler-vibe/sdk',
     instructions: hasAnon
@@ -261,12 +276,20 @@ async function runInit(flags: ParsedArgs): Promise<void> {
   if (shouldCreate) {
     const name = flags.name ?? (isNonInteractive ? 'Default Site' : await promptSiteName())
     const site = await createSite(client, name)
+
+    const agentFilePath = flags.noAgentFile
+      ? null
+      : await writeAgentFileFor(creds.url, creds.serviceRoleKey, site.id)
+
     if (flags.json) {
-      printSiteJson(creds.url, creds.anonKey, site)
+      printSiteJson(creds.url, creds.anonKey, site, agentFilePath)
     } else {
       console.log('')
       console.log(pc.green(`  ✓ Site created: ${site.name}`))
       console.log(`    Site ID: ${pc.bold(site.id)}`)
+      if (agentFilePath) {
+        console.log(pc.green(`  ✓ Agent file: ${agentFilePath}`))
+      }
       printSnippet(creds.url, creds.anonKey, site.id)
       console.log(pc.green('  Done! Comments are live.'))
       console.log('')
@@ -312,12 +335,19 @@ async function runAddSite(flags: ParsedArgs): Promise<void> {
   const name = flags.name ?? (await promptSiteName())
   const site = await createSite(client, name)
 
+  const agentFilePath = flags.noAgentFile
+    ? null
+    : await writeAgentFileFor(url, serviceRoleKey, site.id)
+
   if (flags.json) {
-    printSiteJson(url, anonKey, site)
+    printSiteJson(url, anonKey, site, agentFilePath)
   } else {
     console.log('')
     console.log(pc.green(`  ✓ Site created: ${site.name}`))
     console.log(`    Site ID: ${pc.bold(site.id)}`)
+    if (agentFilePath) {
+      console.log(pc.green(`  ✓ Agent file: ${agentFilePath}`))
+    }
     printSnippet(url, anonKey, site.id)
   }
 }
@@ -626,13 +656,17 @@ async function runComment(flags: ParsedArgs): Promise<void> {
 // Agent setup: generate a HOLLER.md for any project
 // ──────────────────────────────────────────────────
 
-async function runAgentSetup(flags: ParsedArgs): Promise<void> {
-  requireFlags(flags, 'url', 'serviceKey', 'siteId')
+interface AgentFileInputs {
+  url: string
+  serviceKey: string
+  siteId: string
+}
 
+function buildAgentFileContent({ url, serviceKey, siteId }: AgentFileInputs): string {
   // Auto-detect CLI path from the running process
   const cliPath = process.argv[1].replace(/\\/g, '/')
 
-  const content = `# Holler — Agent Instructions
+  return `# Holler — Agent Instructions
 
 This project uses [Holler](https://github.com/YOUR_USERNAME/holler) for
 Figma-style commenting. Comments are stored in Supabase and visible as
@@ -643,9 +677,9 @@ pins overlaid on the running app.
 Set these in your shell or \`.env\` to avoid passing flags every time:
 
 \`\`\`bash
-export HOLLER_URL="${flags.url}"
-export HOLLER_KEY="${flags.serviceKey}"
-export HOLLER_SITE_ID="${flags.siteId}"
+export HOLLER_URL="${url}"
+export HOLLER_KEY="${serviceKey}"
+export HOLLER_SITE_ID="${siteId}"
 \`\`\`
 
 Or pass them as \`--url\`, \`--key\`, \`--site-id\` flags to any command below.
@@ -732,10 +766,23 @@ If you need to pass \`--page\`, either:
 - prefix with \`//\` (e.g. \`--page "//about"\`), or
 - \`export MSYS_NO_PATHCONV=1\` in the shell first.
 `
+}
 
-  const { writeFile } = await import('node:fs/promises')
+async function writeAgentFile(
+  inputs: AgentFileInputs,
+  outPath: string,
+): Promise<void> {
+  await writeFile(outPath, buildAgentFileContent(inputs), 'utf-8')
+}
+
+async function runAgentSetup(flags: ParsedArgs): Promise<void> {
+  requireFlags(flags, 'url', 'serviceKey', 'siteId')
+
   const outPath = flags.name ?? 'HOLLER.md'
-  await writeFile(outPath, content, 'utf-8')
+  await writeAgentFile(
+    { url: flags.url!, serviceKey: flags.serviceKey!, siteId: flags.siteId! },
+    outPath,
+  )
 
   if (flags.json) {
     console.log(JSON.stringify({ path: outPath, site_id: flags.siteId }))
