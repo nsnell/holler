@@ -1,6 +1,6 @@
 {
   "name": "@holler-vibe/cli",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "CLI for setting up Holler against a user's Supabase project",
   "license": "MIT",
   "type": "module",
