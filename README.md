@@ -57,9 +57,15 @@ A comment button appears on your page. Click it, click anywhere, and leave feedb
 
 Using a bundler (React, Vue, etc.)? Install the SDK instead: `npm install @holler-vibe/sdk` — see [JavaScript API](#javascript-api) below.
 
-### Step 4 (optional) — Set up your AI agent
+### Step 4 — AI agent instructions (automatic)
 
-Generate a `HOLLER.md` file with agent instructions pre-filled for your project:
+`init` (and `add-site`) drop a `HOLLER.md` in the current directory with
+everything an AI agent needs — your Supabase URL, service key, and site ID
+are already baked in. Any coding agent (Claude Code, Cursor, etc.) working
+in that project can read it and immediately knows how to list comments,
+reply, and resolve threads from the terminal.
+
+Pass `--no-agent-file` to skip generation, or regenerate on demand:
 
 ```bash
 npx @holler-vibe/cli agent-setup \
@@ -68,7 +74,7 @@ npx @holler-vibe/cli agent-setup \
   --site-id "your-site-uuid"
 ```
 
-Drop the generated `HOLLER.md` into any project root. Any AI agent (Claude Code, Cursor, etc.) working in that project can read it and immediately knows how to list comments, reply, and resolve threads from the terminal. See [AGENTS.md](./AGENTS.md) for the full agent reference.
+See [AGENTS.md](./AGENTS.md) for the full agent reference.
 
 ### Keyboard shortcuts
 
